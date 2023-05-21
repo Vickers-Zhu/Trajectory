@@ -1,6 +1,10 @@
 import numpy as np
 
 def calculate_directional_correlation_delay(trajectories, bird_i, bird_j, tau):
+    if tau < 0:
+        bird_i, bird_j = bird_j, bird_i
+        tau = -tau
+
     trajectory_i = trajectories[bird_i]
     trajectory_j = trajectories[bird_j]
     
@@ -12,11 +16,14 @@ def calculate_directional_correlation_delay(trajectories, bird_i, bird_j, tau):
     
     velocities_i_common = velocities_i[np.isin(frames_i, common_frames)]  # Select velocities_i for common frames
     velocities_j_common = velocities_j[np.isin(frames_j, common_frames)]  # Select velocities_j for common frames
+
+    if tau > len(velocities_i_common):
+        raise ValueError('tau is larger than the number of points in the trajectory')
     
     velocities_j_delayed = velocities_j_common[tau:]  # Shift velocities_j_common by tau frames
     
-    numerator = np.sum(velocities_i_common[:len(velocities_i_common)-tau] * velocities_j_delayed[:len(velocities_i_common)-tau])
-    denominator = np.sqrt(np.mean(velocities_i_common[:-tau]) ** 2) * np.sqrt(np.mean(velocities_j_delayed) ** 2)  # Compute the denominator
+    numerator = np.sum(velocities_i_common[: -tau if tau != 0 else None] * velocities_j_delayed)  # Compute the numerator
+    denominator = np.linalg.norm(velocities_i_common[: -tau if tau != 0 else None]) * np.linalg.norm(velocities_j_delayed)  # Compute the denominator
     
     c_ij_tau = numerator / denominator  # Calculate Cij(τ)
     
@@ -24,28 +31,21 @@ def calculate_directional_correlation_delay(trajectories, bird_i, bird_j, tau):
 
 def calculate_correlation_pairs_multiple_tau(trajectories, bird_i, bird_j, tau_values):
     correlation_pairs = {}  # Dictionary to store the correlation values for each pair
+    c_ij_values = []  # List to store the c_ij_tau values
 
     for tau in tau_values:
         if len(trajectories[bird_i]) < 60 or len(trajectories[bird_j]) < 60:
+            print('Skipped. Too few points in trajectories.')
             continue
         c_ij_tau = calculate_directional_correlation_delay(trajectories, bird_i, bird_j, tau)
-        pair_key = (bird_i, bird_j)
-        correlation_pairs[pair_key] = c_ij_tau
-
+        c_ij_values.append(c_ij_tau)
+   
+    pair_key = (bird_i, bird_j)
+    correlation_pairs[pair_key] = c_ij_values
     return correlation_pairs
 
-def calculate_correlation_pairs_tau(trajectories, tau):
-    num_birds = len(trajectories)
-    correlation_pairs = {}  # Dictionary to store the correlation values for each pair
-
-    for bird_i in range(num_birds):
-        if len(trajectories[bird_i]) < 60:  # Skip if the number of trajectories is less than 60
-            continue
-        for bird_j in range(bird_i + 1, num_birds):
-            if len(trajectories[bird_j]) < 60:  # Skip if the number of trajectories is less than 60
-                continue
-            c_ij_tau = calculate_directional_correlation_delay(trajectories, bird_i, bird_j, tau)
-            pair_key = (bird_i, bird_j)
-            correlation_pairs[pair_key] = c_ij_tau
-
-    return correlation_pairs
+def calculate_normalized_velocity(velocity):
+    norm = np.linalg.norm(velocity)
+    if norm == 0:
+        return velocity
+    return velocity / norm
