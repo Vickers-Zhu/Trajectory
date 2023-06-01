@@ -27,5 +27,5 @@ def read_trj_data(filename):
                 trj_prev = trj_id
                 cnt += 1
             else:
-                trajectory.append([frame,xpos,ypos,zpos,xvel,yvel,zvel])
+                trajectory.append([trj_id,frame,xpos,ypos,zpos,xvel,yvel,zvel])
     return data

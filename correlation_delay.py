@@ -8,8 +8,8 @@ def calculate_directional_correlation_delay(trajectories, bird_i, bird_j, tau):
     trajectory_i = trajectories[bird_i]
     trajectory_j = trajectories[bird_j]
     
-    frames_i, velocities_i = np.array(trajectory_i)[:, 0], np.array(trajectory_i)[:, 4:7]  # Extract frames and velocities from trajectory_i
-    frames_j, velocities_j = np.array(trajectory_j)[:, 0], np.array(trajectory_j)[:, 4:7]  # Extract frames and velocities from trajectory_j
+    frames_i, velocities_i = np.array(trajectory_i)[:, 1], np.array(trajectory_i)[:, 5:8]  # Extract frames and velocities from trajectory_i
+    frames_j, velocities_j = np.array(trajectory_j)[:, 1], np.array(trajectory_j)[:, 5:8]  # Extract frames and velocities from trajectory_j
     
     # Find the common frames between trajectory_i and trajectory_j
     common_frames = np.intersect1d(frames_i, frames_j, assume_unique=True)
