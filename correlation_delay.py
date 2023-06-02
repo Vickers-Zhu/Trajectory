@@ -4,9 +4,10 @@ def calculate_directional_correlation_delay(trajectories, bird_i, bird_j, tau):
     if tau < 0:
         bird_i, bird_j = bird_j, bird_i
         tau = -tau
-
-    trajectory_i = trajectories[bird_i]
-    trajectory_j = trajectories[bird_j]
+    # for traj in trajectories:
+    #     print(traj[0][0])
+    trajectory_i = get_traj(trajectories, bird_i)
+    trajectory_j = get_traj(trajectories, bird_j)
     
     frames_i, velocities_i = np.array(trajectory_i)[:, 1], np.array(trajectory_i)[:, 5:8]  # Extract frames and velocities from trajectory_i
     frames_j, velocities_j = np.array(trajectory_j)[:, 1], np.array(trajectory_j)[:, 5:8]  # Extract frames and velocities from trajectory_j
@@ -34,7 +35,7 @@ def calculate_correlation_pairs_multiple_tau(trajectories, bird_i, bird_j, tau_v
     c_ij_values = []  # List to store the c_ij_tau values
 
     for tau in tau_values:
-        if len(trajectories[bird_i]) < 60 or len(trajectories[bird_j]) < 60:
+        if len(get_traj(trajectories, bird_i)) < 60 or len(get_traj(trajectories, bird_j)) < 60:
             print('Skipped. Too few points in trajectories.')
             continue
         c_ij_tau = calculate_directional_correlation_delay(trajectories, bird_i, bird_j, tau)
@@ -49,3 +50,8 @@ def calculate_normalized_velocity(velocity):
     if norm == 0:
         return velocity
     return velocity / norm
+
+def get_traj(trajectories, n):   
+    for traj in trajectories:
+        if len(traj) > 0 and len(traj[0]) > 0 and traj[0][0]==n:
+            return traj
