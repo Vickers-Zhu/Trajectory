@@ -55,3 +55,5 @@ def get_traj(trajectories, n):
     for traj in trajectories:
         if len(traj) > 0 and len(traj[0]) > 0 and traj[0][0]==n:
             return traj
+    raise ValueError(f"No trajectory found with trj_id = {n}")
+
