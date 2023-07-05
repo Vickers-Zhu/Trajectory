@@ -91,3 +91,27 @@ def find_trajectory_ids(trajectories, length_threshold):
         except ValueError:
             pass
     return selected_ids
+
+
+def calculate_acceleration(selected_trajectories):
+    acceleration_data = []
+
+    for trajectory in selected_trajectories:
+        acceleration_each = []
+        for i in range(len(trajectory) - 1):
+            trj_id = trajectory[i][0]
+            frame = trajectory[i][1]
+            xvel = trajectory[i][5]
+            yvel = trajectory[i][6]
+            zvel = trajectory[i][7]
+            next_xvel = trajectory[i+1][5]
+            next_yvel = trajectory[i+1][6]
+            next_zvel = trajectory[i+1][7]
+            xacc = next_xvel - xvel
+            yacc = next_yvel - yvel
+            zacc = next_zvel - zvel
+
+            acceleration_each.append([trj_id, frame, xacc, yacc, zacc])
+        acceleration_data.append(acceleration_each)
+
+    return acceleration_data
