@@ -75,6 +75,8 @@ def find_related_most(tau_relations, bird_ids):
 
     for i, bird_i in enumerate(bird_ids):
         max_index = np.argmax(tau_relations[i, :])
+        print('index i: ', i, 'Max index, ', max_index)
+        print(tau_relations[i, :])
         related_bird_id = bird_ids[max_index]
         related_most[bird_i] = related_bird_id
 
