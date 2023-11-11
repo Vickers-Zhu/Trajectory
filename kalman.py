@@ -10,10 +10,10 @@ def kalman_filter(x_values):
     XT, XTERR, ZT, SXX = [], [], [], []
 
     # Initial values for velocity, time, and covariance
-    v = 1
+    v = 10
     t = 0
     dt = 1/60
-    xt, vt, sxx, sxv, svv = -1, 0, 1, 1, 1
+    xt, vt, sxx, sxv, svv = -1, 0, 0.1, 0.1, 0.1
 
     for x in x_values:
         R, Q = 1.0, 2.0  # Process and measurement noise covariances
@@ -33,6 +33,7 @@ def kalman_filter(x_values):
         sxx2 = sxx - sxx**2/(sxx+Q)
         sxv2 = sxv - sxx*sxv/(sxx+Q)
         svv2 = svv - sxv**2/(sxx+Q)
+        print("sxx: ", sxx)
 
         # Update state estimate based on velocity
         xt = xt2 + vt2 * dt
@@ -62,7 +63,7 @@ def plot_kalman_results(T, x_values, XT, XTERR, ZT):
     plt.plot(T, x_values, color='blue', linewidth=7, label='State Model')
     plt.errorbar(T, XT, yerr=XTERR, capsize=0.01, fmt='o',
                  color='red', ecolor='orange', label='Estimate')
-    plt.plot(T, ZT, '*', color='green', linewidth=0.1, label='Observation')
+    plt.plot(T, ZT, '.', color='green', linewidth=0.1, label='Observation')
     plt.xlabel('T')
     plt.ylabel('X')
     plt.grid(True)
