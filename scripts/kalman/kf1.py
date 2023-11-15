@@ -9,9 +9,6 @@ import threading
 ########################################################################
 # Pre-defined parameters
 
-# Specifying the target object for tracking
-target = 0
-
 # Initializing lists to store trajectory data (x, y, z coordinates) and frame numbers
 xyz = []
 frames = []
@@ -96,10 +93,12 @@ TIM, PX, PY, PZ, VX, VY, VZ, VEL, AX, AY, AZ, ACC, AXERR = [
 ########################################################################
 
 
-def kalman3Dacc(lines):
+def kalman3Dacc(lines, target):
     # Global variables
-    global xyz, F, G, H, X, XT, S, Q, R
-    xyz = []
+    global xyz, frames, F, G, H, X, XT, S, Q, R
+    xyz, frames = [], []
+    S = np.zeros((9, 9))  # Initial state covariance matrix (all zeros)
+
     # Counter for processing lines
     cnt = 0
     for line in lines:
@@ -179,13 +178,17 @@ def kalman3Dacc(lines):
 
         t = t + dt
     # Draw
-    draw_kalman_acc()
-    draw_kalman_3D()
+    draw_kalman_acc(target)
+    draw_kalman_3D(target)
 
 
-def draw_kalman_3D():
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')  # Create a 3D subplot
+def draw_kalman_3D(target):
+    plt.close('all')
+    if "fig" in globals():
+        plt.clf()  # Clear the existing figure
+    else:
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')  # Create a 3D subplot
 
     # Define a step size for downsampling
     step_size = 100  # Adjust this number to change the density of plotted points
@@ -196,7 +199,7 @@ def draw_kalman_3D():
 
     # Plot the trajectory from xyz array
     ax.plot(xyz[:, 0], xyz[:, 1], xyz[:, 2], color='red',
-            linewidth=1.5, linestyle=':', label='Observation (xyz array)')
+            linewidth=1.5, linestyle=':', label=str(target)+' Observation (xyz array)')
 
     # Determine the maximum extent for the reference axes
     max_range = max(max(PX), max(PY), max(PZ), np.max(
@@ -225,19 +228,24 @@ def draw_kalman_3D():
     plt.show()
 
 
-def draw_kalman_acc():
+def draw_kalman_acc(target):
     # Writing acceleration data to a file
     # with open('acc_data/' + str(target) + '.txt', 'w') as f:
     #     for i in range(len(frames)):
     #         print(frames[i], AX[i], AY[i], AZ[i], file=f)
     # Plotting the acceleration components
-    plt.plot(TIM, AX, color='blue', linewidth=1.0, label='AX')
-    plt.plot(TIM, AY, color='green', linewidth=1.0, label='AY')
-    plt.plot(TIM, AZ, color='red', linewidth=1.0, label='AZ')
-    plt.title('Trajectory #' + str(target))
-    plt.xlabel('Time')
-    plt.ylabel('Acceleration')
-    plt.grid(True)
+    plt.close('all')
+    if "fig" in globals():
+        plt.clf()  # Clear the existing figure
+    else:
+        fig, ax = plt.subplots()  # Create a new figure and axes
+    ax.plot(TIM, AX, color='blue', linewidth=1.0, label='AX')
+    ax.plot(TIM, AY, color='green', linewidth=1.0, label='AY')
+    ax.plot(TIM, AZ, color='red', linewidth=1.0, label='AZ')
+    ax.set_title('Trajectory #' + str(target))
+    ax.set_xlabel('Time')
+    ax.set_ylabel('Acceleration')
+    ax.grid(True)
     plt.legend()
     # plt.xlim(1800, 2700)
     plt.show()
