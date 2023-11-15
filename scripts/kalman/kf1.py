@@ -244,4 +244,4 @@ if __name__ == "__main__":
     file = open("data/20201206-S8F1328E1#1S20.trj")
     data = file.readlines()
     file.close()
-    kalman3Dacc(data)
+    kalman3Dacc(data, 0)
