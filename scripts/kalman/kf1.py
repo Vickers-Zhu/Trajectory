@@ -72,17 +72,6 @@ R = np.array([[0.3, 0,   0],  # X position measurement noise
               [0, 0.3,   0],  # Y position measurement noise
               [0,   0, 0.3]])  # Z position measurement noise
 
-# Set initial position and velocity estimates
-XT[0, 0] = x0
-XT[1, 0] = y0
-XT[2, 0] = z0
-XT[3, 0] = vx0
-XT[4, 0] = vy0
-XT[5, 0] = vz0
-XT[6, 0] = 0
-XT[7, 0] = 0
-XT[8, 0] = 0
-
 # Initialize state covariance matrix as identity matrix
 S = np.eye(9)
 
