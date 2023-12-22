@@ -6,7 +6,35 @@ from IPython.display import HTML, display
 from coordinate_trans import rotate_x_gaussian_distribution
 
 
+def generate_gaussian_samples(mu, Sigma, num_samples=10000):
+    """
+    Generate random samples for a 3D Gaussian distribution.
+
+    Args:
+    mu (np.array): Mean vector of the Gaussian distribution.
+    Sigma (np.array): Covariance matrix of the Gaussian distribution.
+    num_samples (int): Number of random samples to generate.
+
+    Returns:
+    np.array: Random samples generated from the Gaussian distribution.
+    """
+    # Standard deviation for each axis
+    std_devs = np.sqrt(np.diag(Sigma))
+    print(std_devs)
+
+    # Generating samples
+    x = np.random.uniform(mu[0] - 3*std_devs[0],
+                          mu[0] + 3*std_devs[0], num_samples)
+    y = np.random.uniform(mu[1] - 3*std_devs[1],
+                          mu[1] + 3*std_devs[1], num_samples)
+    z = np.random.uniform(mu[2] - 3*std_devs[2],
+                          mu[2] + 3*std_devs[2], num_samples)
+
+    return np.vstack([x, y, z]).T
+
 # Define the multivariate Gaussian function
+
+
 def multivariate_gaussian(pos, mu, Sigma):
     """
     Return the multivariate Gaussian density value for a position.
@@ -27,7 +55,7 @@ def multivariate_gaussian(pos, mu, Sigma):
     return np.exp(-fac / 2) / N
 
 
-def plot_3d_gaussian(mu, Sigma, num_samples=20000):
+def plot_3d_gaussian(mu, Sigma, num_samples=10000):
     """
     Plot a 3D Gaussian distribution.
 
@@ -36,13 +64,14 @@ def plot_3d_gaussian(mu, Sigma, num_samples=20000):
     Sigma (np.array): Covariance matrix of the Gaussian distribution.
     num_samples (int): Number of random samples to generate for plotting.
     """
-    # Generate random samples
-    x = np.random.uniform(-10, 10, num_samples)
-    y = np.random.uniform(-10, 10, num_samples)
-    z = np.random.uniform(-10, 10, num_samples)
 
     # Calculate the density of these samples
-    samples = np.vstack([x, y, z]).T
+    samples = generate_gaussian_samples(mu, Sigma, num_samples)
+
+    # Extract x, y, and z coordinates
+    x = samples[:, 0]
+    y = samples[:, 1]
+    z = samples[:, 2]
     densities = np.array([multivariate_gaussian(sample, mu, Sigma)
                           for sample in samples])
 
@@ -62,12 +91,12 @@ def plot_3d_gaussian(mu, Sigma, num_samples=20000):
     # X-axis
     ax.plot([0, axis_length], [0, 0], [0, 0],
             color='red', lw=2, label='X-axis')
-    # Y-axis
-    ax.plot([0, 0], [0, axis_length], [0, 0],
-            color='green', lw=2, label='Y-axis')
-    # Z-axis
-    ax.plot([0, 0], [0, 0], [0, axis_length],
-            color='blue', lw=2, label='Z-axis')
+    # # Y-axis
+    # ax.plot([0, 0], [0, axis_length], [0, 0],
+    #         color='green', lw=2, label='Y-axis')
+    # # Z-axis
+    # ax.plot([0, 0], [0, 0], [0, axis_length],
+    #         color='blue', lw=2, label='Z-axis')
 
     ax.scatter(x, y, z, c=colors, marker='o', edgecolor='none', s=2)
 
@@ -80,14 +109,13 @@ def plot_3d_gaussian(mu, Sigma, num_samples=20000):
 
 
 def animate_rotation(mu, Sigma, num_samples=20000, frames=90):
-    # Generate initial random samples
-    x = np.random.uniform(-10, 10, num_samples)
-    y = np.random.uniform(-10, 10, num_samples)
-    z = np.random.uniform(-10, 10, num_samples)
-    samples = np.vstack([x, y, z]).T
-
+    samples = generate_gaussian_samples(mu, Sigma, num_samples)
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
+    # Extract x, y, and z coordinates
+    x = samples[:, 0]
+    y = samples[:, 1]
+    z = samples[:, 2]
     scat = ax.scatter(x, y, z, c='blue', marker='o', edgecolor='none', s=2)
 
     def update(frame):
@@ -121,6 +149,6 @@ def animate_rotation(mu, Sigma, num_samples=20000, frames=90):
 # Example usage
 mu = np.array([6, 6, 6])
 Sigma = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
-mu, Sigma = rotate_x_gaussian_distribution(mu, Sigma, np.radians(-90))
+# mu, Sigma = rotate_x_gaussian_distribution(mu, Sigma, np.radians(-90))
 plot_3d_gaussian(mu, Sigma)
 # animate_rotation(mu, Sigma)

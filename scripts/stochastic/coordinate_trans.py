@@ -78,9 +78,9 @@ def rotate_x_gaussian_distribution(mean, covariance, phi):
     return rotated_mean, rotated_covariance
 
 
-# Example usage
-a, b, c = 0, 1, 11  # Point in original coordinate system
-x, y, z = 0, 1, 12  # New origin point
-transformed_point = transform_point(a, b, c, x, y, z)
+# # Example usage
+# a, b, c = 0, 1, 11  # Point in original coordinate system
+# x, y, z = 0, 1, 12  # New origin point
+# transformed_point = transform_point(a, b, c, x, y, z)
 
-print("Transformed Point:", transformed_point)
+# print("Transformed Point:", transformed_point)
