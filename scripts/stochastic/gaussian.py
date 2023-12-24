@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.animation import FuncAnimation
 from IPython.display import HTML, display
-from coordinate_trans import rotate_x_gaussian_distribution
+from ..stochastic.coordinate_trans import rotate_x_gaussian_distribution
 
 
 def generate_gaussian_samples(mu, Sigma, num_samples=10000):
@@ -20,15 +20,14 @@ def generate_gaussian_samples(mu, Sigma, num_samples=10000):
     """
     # Standard deviation for each axis
     std_devs = np.sqrt(np.diag(Sigma))
-    print(std_devs)
 
     # Generating samples
-    x = np.random.uniform(mu[0] - 3*std_devs[0],
-                          mu[0] + 3*std_devs[0], num_samples)
-    y = np.random.uniform(mu[1] - 3*std_devs[1],
-                          mu[1] + 3*std_devs[1], num_samples)
-    z = np.random.uniform(mu[2] - 3*std_devs[2],
-                          mu[2] + 3*std_devs[2], num_samples)
+    x = np.random.uniform(mu[0] - 2*std_devs[0],
+                          mu[0] + 2*std_devs[0], num_samples)
+    y = np.random.uniform(mu[1] - 2*std_devs[1],
+                          mu[1] + 2*std_devs[1], num_samples)
+    z = np.random.uniform(mu[2] - 2*std_devs[2],
+                          mu[2] + 2*std_devs[2], num_samples)
 
     return np.vstack([x, y, z]).T
 
@@ -55,7 +54,7 @@ def multivariate_gaussian(pos, mu, Sigma):
     return np.exp(-fac / 2) / N
 
 
-def plot_3d_gaussian(mu, Sigma, num_samples=10000):
+def plot_3d_gaussian(mu, Sigma, num_samples=10000, ax=None, offset=np.array([0, 0, 0])):
     """
     Plot a 3D Gaussian distribution.
 
@@ -82,15 +81,18 @@ def plot_3d_gaussian(mu, Sigma, num_samples=10000):
     colors = plt.cm.plasma(densities_normalized)
     colors[:, 3] = 1 - densities_normalized
 
-    # Plotting
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
+    if ax == None:
+        ax = plt.figure().add_subplot(111, projection='3d')
+        ax.set_xlabel('X axis')
+        ax.set_ylabel('Y axis')
+        ax.set_zlabel('Z axis')
+        ax.set_title('3D Gaussian Distribution Visualization')
 
     # Draw the X, Y, and Z axes
-    axis_length = 5
+    # axis_length = 5
     # X-axis
-    ax.plot([0, axis_length], [0, 0], [0, 0],
-            color='red', lw=2, label='X-axis')
+    # ax.plot([0, axis_length], [0, 0], [0, 0],
+    #         color='red', lw=2, label='X-axis')
     # # Y-axis
     # ax.plot([0, 0], [0, axis_length], [0, 0],
     #         color='green', lw=2, label='Y-axis')
@@ -98,14 +100,10 @@ def plot_3d_gaussian(mu, Sigma, num_samples=10000):
     # ax.plot([0, 0], [0, 0], [0, axis_length],
     #         color='blue', lw=2, label='Z-axis')
 
-    ax.scatter(x, y, z, c=colors, marker='o', edgecolor='none', s=2)
+    ax.scatter(x+offset[0], y+offset[1], z+offset[2], c=colors,
+               marker='o', edgecolor='none', s=2)
 
-    ax.set_xlabel('X axis')
-    ax.set_ylabel('Y axis')
-    ax.set_zlabel('Z axis')
-    ax.set_title('3D Gaussian Distribution Visualization')
-
-    plt.show()
+    # plt.show()
 
 
 def animate_rotation(mu, Sigma, num_samples=20000, frames=90):
@@ -146,9 +144,9 @@ def animate_rotation(mu, Sigma, num_samples=20000, frames=90):
     # display(HTML(ani.to_html5_video()))
 
 
-# Example usage
-mu = np.array([6, 6, 6])
-Sigma = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+# # Example usage
+# mu = np.array([6, 6, 6])
+# Sigma = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
 # mu, Sigma = rotate_x_gaussian_distribution(mu, Sigma, np.radians(-90))
-plot_3d_gaussian(mu, Sigma)
-# animate_rotation(mu, Sigma)
+# plot_3d_gaussian(mu, Sigma)
+# # animate_rotation(mu, Sigma)

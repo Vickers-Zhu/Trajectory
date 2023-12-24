@@ -2,14 +2,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib
+from ..stochastic.coordinate_trans import angle_with_z_axis, rotate_around_x, rotate_x_gaussian_distribution
+from ..stochastic.gaussian import plot_3d_gaussian
 # matplotlib.use('Qt5Agg')
 
 
 class StereoscopicSensorSystem:
-    def __init__(self, pixel_size, focal_length, height, distance_between_lenses):
+    def __init__(self, pixel_size, focal_length, distance_between_lenses, obj_pos):
         self.P = pixel_size  # Pixel size in meters
         self.F = focal_length  # Focal Length in meters
-        self.Z = height  # Height in meters
+        self.Z = np.sqrt(obj_pos[1]**2 + obj_pos[2]**2)  # Height from x axis
         self.D = distance_between_lenses  # Distance between lenses in meters
 
         # Refactored coordinates
@@ -17,23 +19,39 @@ class StereoscopicSensorSystem:
         self.right_len = (self.D/2, 0, 0)
         self.left_sensor = (-self.D/2, 0, -self.F)
         self.right_sensor = (self.D/2, 0, -self.F)
-        self.star = (0, 0, self.Z)
+        self.star = obj_pos
 
         # Calculate dz and dr
         self.dz = (self.Z**2) * (self.P/2) / (self.F * self.D)
         self.dr = self.Z * (self.P/2) / self.F
-        # # Calculate the coordinates for ebot and etop
-        self.ebot = (0, 0, -self.dz + self.Z)
-        self.etop = (0, 0, self.dz + self.Z)
+        # # Calculate the coordinates for errbot and errtop
+        self.dir = -angle_with_z_axis(obj_pos[1], obj_pos[2])
+        self.ebot = rotate_around_x((0, 0, -self.dz + self.Z), self.dir)
+        self.etop = rotate_around_x((0, 0, self.dz + self.Z), self.dir)
 
     def interpolate_point_on_line_through_star(self, start, star, z_value):
-        direction = np.array(star) - np.array(start)
+        # Convert to numpy arrays for vectorized operations
+        start = np.array(start)
+        star = np.array(star)
+
+        # Calculate the direction vector of the line
+        direction = star - start
+
+        # Avoid division by zero if the direction vector is parallel to the XY plane
+        if direction[2] == 0:
+            raise ValueError(
+                "The line is parallel to the XY plane and does not intersect at z_value.")
+
+        # Calculate the parameter t at the intersection point
         t = (z_value - start[2]) / direction[2]
+
+        # Calculate the x and y coordinates of the intersection point
         x = start[0] + t * direction[0]
         y = start[1] + t * direction[1]
+
         return (x, y, z_value)
 
-    def calculate_intersections(self):
+    def calculate_intersections_on_sensor(self):
         intersection_left = self.interpolate_point_on_line_through_star(
             self.left_len, self.star, self.left_sensor[2])
         intersection_right = self.interpolate_point_on_line_through_star(
@@ -41,7 +59,7 @@ class StereoscopicSensorSystem:
         return intersection_left, intersection_right
 
     def plot_system(self):
-        intersection_left, intersection_right = self.calculate_intersections()
+        intersection_left, intersection_right = self.calculate_intersections_on_sensor()
 
         # Preparing data for plotting
         lenses_x = [self.left_len[0], self.right_len[0]]
@@ -53,15 +71,15 @@ class StereoscopicSensorSystem:
         # sensors_z = [self.left_sensor[2], self.right_sensor[2]]
 
         # Prepare vectors for plotting
-        vectors_x_left = [self.left_len[0], self.star[0], intersection_left[0]]
-        vectors_y_left = [self.left_len[1], self.star[1], intersection_left[1]]
-        vectors_z_left = [self.left_len[2], self.star[2], intersection_left[2]]
-        vectors_x_right = [self.right_len[0],
-                           self.star[0], intersection_right[0]]
-        vectors_y_right = [self.right_len[1],
-                           self.star[1], intersection_right[1]]
-        vectors_z_right = [self.right_len[2],
-                           self.star[2], intersection_right[2]]
+        vectors_x_left = [intersection_left[0], self.star[0]]
+        vectors_y_left = [intersection_left[1], self.star[1]]
+        vectors_z_left = [intersection_left[2], self.star[2]]
+        vectors_x_right = [intersection_right[0],
+                           self.star[0]]
+        vectors_y_right = [intersection_right[1],
+                           self.star[1]]
+        vectors_z_right = [intersection_right[2],
+                           self.star[2]]
 
         # Plotting
         fig = plt.figure(figsize=(12, 8))
@@ -79,14 +97,26 @@ class StereoscopicSensorSystem:
                 linestyle='--', linewidth=1, marker='o', label='Vector to Star from Right Lens')
 
         # # Draw lines from etop and ebot to the left and right lenses
-        ax.plot([self.etop[0], self.left_len[0]], [self.etop[1], self.left_len[1]], [
-                self.etop[2], self.left_len[2]], color='purple', linestyle='-', label='Etop to Left Lens')
-        ax.plot([self.etop[0], self.right_len[0]], [self.etop[1], self.right_len[1]], [
-                self.etop[2], self.right_len[2]], color='purple', linestyle='-', label='Etop to Right Lens')
-        ax.plot([self.ebot[0], self.left_len[0]], [self.ebot[1], self.left_len[1]], [
-                self.ebot[2], self.left_len[2]], color='cyan', linestyle='-', label='Ebot to Left Lens')
-        ax.plot([self.ebot[0], self.right_len[0]], [self.ebot[1], self.right_len[1]], [
-                self.ebot[2], self.right_len[2]], color='cyan', linestyle='-', label='Ebot to Right Lens')
+        etop_intersections_left = self.interpolate_point_on_line_through_star(
+            self.left_len, self.etop, self.left_sensor[2])
+        etop_intersections_right = self.interpolate_point_on_line_through_star(
+            self.right_len, self.etop, self.right_sensor[2])
+        ebot_intersections_left = self.interpolate_point_on_line_through_star(
+            self.left_len, self.ebot, self.left_sensor[2])
+        ebot_intersections_right = self.interpolate_point_on_line_through_star(
+            self.right_len, self.ebot, self.right_sensor[2])
+
+        # Plot lines from etop to intersections
+        ax.plot([self.etop[0], etop_intersections_left[0]], [self.etop[1], etop_intersections_left[1]], [
+                self.etop[2], etop_intersections_left[2]], color='purple', linestyle='-', label='Etop to Left Intersection')
+        ax.plot([self.etop[0], etop_intersections_right[0]], [self.etop[1], etop_intersections_right[1]], [
+                self.etop[2], etop_intersections_right[2]], color='purple', linestyle='-', label='Etop to Right Intersection')
+
+        # Plot lines from ebot to intersections
+        ax.plot([self.ebot[0], ebot_intersections_left[0]], [self.ebot[1], ebot_intersections_left[1]], [
+                self.ebot[2], ebot_intersections_left[2]], color='cyan', linestyle='-', label='Ebot to Left Intersection')
+        ax.plot([self.ebot[0], ebot_intersections_right[0]], [self.ebot[1], ebot_intersections_right[1]], [
+                self.ebot[2], ebot_intersections_right[2]], color='cyan', linestyle='-', label='Ebot to Right Intersection')
 
         # Mark the intersection points on the sensors' plane
         ax.scatter(*intersection_left, color='green', s=100,
@@ -94,26 +124,16 @@ class StereoscopicSensorSystem:
         ax.scatter(*intersection_right, color='purple', s=100,
                    marker='X', label='Right Intersection')
 
-        # Draw the circle around the star
-        # Generating points on the circle in 3D
-        theta = np.linspace(0, 2 * np.pi, 100)
-        x = self.star[0] + self.dr * np.cos(theta)
-        y = self.star[1] + self.dr * np.sin(theta)
-        z = np.full_like(0, self.star[2])
+        self.plot_error_circle(ax)
 
-        # Plotting the circle
-        ax.plot(x, y, z, linestyle=':', color='red',
-                label='Errors around Star')
         # Draw the star
         ax.scatter(self.star[0], self.star[1], self.star[2],
                    color='orange', s=1, label='Star')
-
+        self.plot_errors(ax)
         # Set the axes labels and limits
         ax.set_xlabel('X axis')
         ax.set_ylabel('Y axis')
         ax.set_zlabel('Z axis')
-        ax.set_ylim([-1, 1])
-        ax.set_xlim([-1, 1])
 
         # Set the ticks for the lenses
         ax.set_xticks(lenses_x)
@@ -125,9 +145,34 @@ class StereoscopicSensorSystem:
 
         plt.show()
 
+    def plot_error_circle(self, ax):
+        # Draw the circle around the star
+        # Generating points on the circle in 3D
+        theta = np.linspace(0, 2 * np.pi, 100)
+        x = 0 + self.dr * np.cos(theta)
+        y = 0 + self.dr * np.sin(theta)
+        z = np.full_like(theta, self.Z)
+        points = np.vstack((x, y, z)).T
 
-# # Create an instance of the class with given parameters
-# system = StereoscopicSensorSystem(8.2e-6, 2.4e-2, 100, 2)
+        rotated_points = np.array(
+            [rotate_around_x(point, self.dir) for point in points])
 
-# # Plot the system
-# system.plot_system()
+        # Plotting the circle
+        ax.plot(rotated_points[:, 0], rotated_points[:, 1], rotated_points[:, 2], linestyle=':', color='red',
+                label='Errors around Star')
+
+    def plot_errors(self, ax):
+        mu = np.array([0, 0, 0])
+        Sigma = np.array(
+            [[(2*self.dr)**2, 0, 0], [0, (2*self.dr)**2, 0], [0, 0, (2*self.dz)**2]])
+        mu, Sigma = rotate_x_gaussian_distribution(mu, Sigma, self.dir)
+        plot_3d_gaussian(mu, Sigma, ax=ax, offset=np.array(
+            [self.star[0], self.star[1], self.star[2]]))
+
+
+# Example usage
+obj_pos = (0, 0, 100)
+system = StereoscopicSensorSystem(8.2e-6, 2.4e-2, 2, obj_pos)
+
+# Plot the system
+system.plot_system()

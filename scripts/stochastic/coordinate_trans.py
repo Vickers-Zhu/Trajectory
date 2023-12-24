@@ -1,6 +1,36 @@
 import numpy as np
 
 
+def angle_with_z_axis(y, z):
+    """
+    Calculate the angle between the vector (0, y, z) and the Z-axis.
+
+    Args:
+    y (float): The y-coordinate of the point.
+    z (float): The z-coordinate of the point.
+
+    Returns:
+    float: The angle in radians.
+    """
+    # Vector (0, y, z)
+    vector_a = np.array([0, y, z])
+
+    # Z-axis vector
+    vector_b = np.array([0, 0, 1])
+
+    # Dot product of vector_a and vector_b
+    dot_product = np.dot(vector_a, vector_b)
+
+    # Magnitudes of vector_a and vector_b
+    magnitude_a = np.linalg.norm(vector_a)
+    magnitude_b = np.linalg.norm(vector_b)
+
+    # Calculate the angle in radians
+    angle = np.arccos(dot_product / (magnitude_a * magnitude_b))
+
+    return angle
+
+
 def transform_point(a, b, c, x, y, z):
     # Step 1: Translation
     translated = np.array([a, b, c]) - np.array([x, y, z])
@@ -84,3 +114,9 @@ def rotate_x_gaussian_distribution(mean, covariance, phi):
 # transformed_point = transform_point(a, b, c, x, y, z)
 
 # print("Transformed Point:", transformed_point)
+
+# y = np.sqrt(3)
+# z = 1
+# angle = angle_with_z_axis(y, z)
+# print("Angle (in radians):", angle)
+# print("Angle (in degrees):", np.degrees(angle))
