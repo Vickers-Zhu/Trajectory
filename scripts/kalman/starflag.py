@@ -1,14 +1,14 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
-import matplotlib
+# import matplotlib
 from ..stochastic.coordinate_trans import angle_with_z_axis, rotate_around_x, rotate_x_gaussian_distribution
 from ..stochastic.gaussian import plot_3d_gaussian
 # matplotlib.use('Qt5Agg')
 
 
 class StereoscopicSensorSystem:
-    def __init__(self, pixel_size, focal_length, distance_between_lenses, obj_pos):
+    def __init__(self, pixel_size, focal_length, distance_between_lenses, obj_pos, angle=None):
         self.P = pixel_size  # Pixel size in meters
         self.F = focal_length  # Focal Length in meters
         self.Z = np.sqrt(obj_pos[1]**2 + obj_pos[2]**2)  # Height from x axis
@@ -25,9 +25,12 @@ class StereoscopicSensorSystem:
         self.dz = (self.Z**2) * (self.P/2) / (self.F * self.D)
         self.dr = self.Z * (self.P/2) / self.F
         # # Calculate the coordinates for errbot and errtop
-        self.dir = -angle_with_z_axis(obj_pos[1], obj_pos[2])
-        self.ebot = rotate_around_x((0, 0, -self.dz + self.Z), self.dir)
-        self.etop = rotate_around_x((0, 0, self.dz + self.Z), self.dir)
+        self.dir = -np.deg2rad(angle) if angle is not None else - \
+            angle_with_z_axis(obj_pos[1], obj_pos[2])
+        self.ebot = rotate_around_x(
+            (obj_pos[0], 0, -self.dz + self.Z), -angle_with_z_axis(obj_pos[1], obj_pos[2]))
+        self.etop = rotate_around_x(
+            (obj_pos[0], 0, self.dz + self.Z), -angle_with_z_axis(obj_pos[1], obj_pos[2]))
 
     def interpolate_point_on_line_through_star(self, start, star, z_value):
         # Convert to numpy arrays for vectorized operations
@@ -134,11 +137,8 @@ class StereoscopicSensorSystem:
         ax.set_xlabel('X axis')
         ax.set_ylabel('Y axis')
         ax.set_zlabel('Z axis')
-
-        # Set the ticks for the lenses
-        ax.set_xticks(lenses_x)
-        ax.set_xticklabels(['Left Lens', 'Right Lens'])
-
+        # Setting the aspect ratio to be equal for all axes
+        ax.set_box_aspect([1, 1, 1])
         # Set the legend and title
         ax.legend(loc='upper left')
         ax.set_title('3D Stereoscopic Sensor System Representation')
@@ -171,8 +171,8 @@ class StereoscopicSensorSystem:
 
 
 # Example usage
-obj_pos = (0, 0, 100)
-system = StereoscopicSensorSystem(8.2e-6, 2.4e-2, 2, obj_pos)
+obj_pos = (47.159596, 178.670423, 59.549856)
+system = StereoscopicSensorSystem(3.45e-6, 1.2e-2, 2.085, obj_pos, 90-29.52)
 
-# Plot the system
+# # Plot the system
 system.plot_system()
