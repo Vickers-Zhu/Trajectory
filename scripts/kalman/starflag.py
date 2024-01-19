@@ -2,8 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 # import matplotlib
-from ..stochastic.coordinate_trans import angle_with_z_axis, rotate_around_x, rotate_x_gaussian_distribution
-from ..stochastic.gaussian import plot_3d_gaussian
+from scripts.stochastic.coordinate_trans import angle_with_z_axis, rotate_around_x, rotate_x_gaussian_distribution
+from scripts.stochastic.gaussian import plot_3d_gaussian
 # matplotlib.use('Qt5Agg')
 
 
@@ -25,7 +25,7 @@ class StereoscopicSensorSystem:
         self.dz = (self.Z**2) * (self.P/2) / (self.F * self.D)
         self.dr = self.Z * (self.P/2) / self.F
         # # Calculate the coordinates for errbot and errtop
-        self.dir = -np.deg2rad(angle) if angle is not None else - \
+        self.dir_camera = -np.deg2rad(angle) if angle is not None else - \
             angle_with_z_axis(obj_pos[1], obj_pos[2])
         self.ebot = rotate_around_x(
             (obj_pos[0], 0, -self.dz + self.Z), -angle_with_z_axis(obj_pos[1], obj_pos[2]))
@@ -155,7 +155,7 @@ class StereoscopicSensorSystem:
         points = np.vstack((x, y, z)).T
 
         rotated_points = np.array(
-            [rotate_around_x(point, self.dir) for point in points])
+            [rotate_around_x(point, self.dir_camera) for point in points])
 
         # Plotting the circle
         ax.plot(rotated_points[:, 0], rotated_points[:, 1], rotated_points[:, 2], linestyle=':', color='red',
@@ -165,13 +165,13 @@ class StereoscopicSensorSystem:
         mu = np.array([0, 0, 0])
         Sigma = np.array(
             [[(2*self.dr)**2, 0, 0], [0, (2*self.dr)**2, 0], [0, 0, (2*self.dz)**2]])
-        mu, Sigma = rotate_x_gaussian_distribution(mu, Sigma, self.dir)
+        mu, Sigma = rotate_x_gaussian_distribution(mu, Sigma, self.dir_camera)
         plot_3d_gaussian(mu, Sigma, ax=ax, offset=np.array(
             [self.star[0], self.star[1], self.star[2]]))
 
 
 # Example usage
-obj_pos = (47.159596, 178.670423, 59.549856)
+obj_pos = (-47.159596, 178.670423, 59.549856)
 system = StereoscopicSensorSystem(3.45e-6, 1.2e-2, 2.085, obj_pos, 90-29.52)
 
 # # Plot the system

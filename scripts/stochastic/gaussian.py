@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.animation import FuncAnimation
 from IPython.display import HTML, display
-from ..stochastic.coordinate_trans import rotate_x_gaussian_distribution
+from scripts.stochastic.coordinate_trans import rotate_x_gaussian_distribution
 
 
 def generate_gaussian_samples(mu, Sigma, num_samples=10000):

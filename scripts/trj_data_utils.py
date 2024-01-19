@@ -1,7 +1,6 @@
 # import TrjSample
 import matplotlib.pyplot as plt
 import numpy as np
-from scripts.cordelay.correlation_delay import calculate_correlation_pairs_multiple_tau, get_traj
 
 
 def read_trj_data(filename):
@@ -33,28 +32,6 @@ def read_trj_data(filename):
                 trajectory.append(
                     [trj_id, frame, xpos, ypos, zpos, xvel, yvel, zvel])
     return data
-
-
-def calculate_heatmap_data(data, bird_ids, tau_values):
-    num_birds = len(bird_ids)
-    heatmap_data = np.zeros((num_birds, num_birds))
-    tau_max_data = np.zeros((num_birds, num_birds))
-
-    # Calculate the maximum Cij(tau) values and corresponding tau values for each pair of birds
-    for i, bird_i in enumerate(bird_ids):
-        for j, bird_j in enumerate(bird_ids[i + 1:], start=i + 1):
-            correlation_pairs = calculate_correlation_pairs_multiple_tau(
-                data, bird_i, bird_j, tau_values)
-            c_ij_values = correlation_pairs[(bird_i, bird_j)]
-            max_c_ij_tau = max(c_ij_values)
-            max_tau_index = c_ij_values.index(max_c_ij_tau)
-            max_tau = tau_values[max_tau_index]
-            heatmap_data[i, j] = max_c_ij_tau
-            heatmap_data[j, i] = max_c_ij_tau  # Fill in the symmetric entry
-            tau_max_data[i, j] = max_tau
-            tau_max_data[j, i] = max_tau  # Fill in the symmetric entry
-
-    return heatmap_data, tau_max_data
 
 
 def create_tau_relations_matrix(heatmap_data, tau_max_data, bird_ids):
@@ -95,25 +72,95 @@ def find_trajectory_ids(trajectories, length_threshold):
     return selected_ids
 
 
-def calculate_acceleration(selected_trajectories):
+def get_traj(trajectories, bird_id):
+    for traj in trajectories:
+        if len(traj) > 0 and len(traj[0]) > 0 and traj[0][0] == bird_id:
+            return traj
+    raise ValueError(f"No trajectory found with trj_id = {bird_id}")
+
+
+def get_trajs_by_ids(trajectories, bird_ids):
+    selected_trajectories = []
+    for traj in trajectories:
+        if len(traj) > 0 and len(traj[0]) > 0 and traj[0][0] in bird_ids:
+            selected_trajectories.append(traj)
+    return selected_trajectories
+
+
+def calculate_acceleration_multi(selected_trajectories):
     acceleration_data = []
 
     for trajectory in selected_trajectories:
-        acceleration_each = []
-        for i in range(len(trajectory) - 1):
-            trj_id = trajectory[i][0]
-            frame = trajectory[i][1]
-            xvel = trajectory[i][5]
-            yvel = trajectory[i][6]
-            zvel = trajectory[i][7]
-            next_xvel = trajectory[i+1][5]
-            next_yvel = trajectory[i+1][6]
-            next_zvel = trajectory[i+1][7]
-            xacc = next_xvel - xvel
-            yacc = next_yvel - yvel
-            zacc = next_zvel - zvel
-
-            acceleration_each.append([trj_id, frame, xacc, yacc, zacc])
+        acceleration_each = calculate_acceleration_fly_direction(trajectory)
         acceleration_data.append(acceleration_each)
 
     return acceleration_data
+
+
+def calculate_acceleration(trajectory):
+    acceleration = []
+    for i in range(len(trajectory) - 1):
+        trj_id = trajectory[i][0]
+        frame = trajectory[i][1]
+        xvel = trajectory[i][5]
+        yvel = trajectory[i][6]
+        zvel = trajectory[i][7]
+        next_xvel = trajectory[i+1][5]
+        next_yvel = trajectory[i+1][6]
+        next_zvel = trajectory[i+1][7]
+        xacc = (next_xvel - xvel)/(1/60)
+        yacc = (next_yvel - yvel)/(1/60)
+        zacc = (next_zvel - zvel)/(1/60)
+
+        acceleration.append([trj_id, frame, xacc, yacc, zacc])
+    return acceleration
+
+
+def calculate_acceleration_fly_direction(trajectory):
+
+    # Assuming equal time intervals between measurements
+    time_interval = 1/60
+
+    # Initialize a list to hold acceleration vectors in the custom coordinate system
+    accelerations_custom_system = []
+
+    for i in range(1, len(trajectory)):
+        trj_id = trajectory[i][0]
+        frame = trajectory[i][1]
+        xpos, ypos, zpos, xvel, yvel, zvel = trajectory[i][2], trajectory[i][
+            3], trajectory[i][4], trajectory[i][5], trajectory[i][6], trajectory[i][7]
+        # Calculate the acceleration vector
+        # Convert the inputs to numpy arrays for easy manipulation
+        position = np.array([xpos, ypos, zpos]).T
+        pre_position = np.array([trajectory[i - 1][2],
+                                 trajectory[i - 1][3], trajectory[i - 1][4]]).T
+        velocity = np.array([xvel, yvel, zvel]).T
+        pre_velocity = np.array([trajectory[i - 1][5],
+                                 trajectory[i - 1][6], trajectory[i - 1][7]]).T
+
+        acceleration_vector = (
+            velocity - pre_velocity) / time_interval
+
+        # Define the custom coordinate system based on the y, z, and cross product for x
+        y_direction = pre_velocity - pre_position
+        z_direction = np.array([0, 0, 1])
+        x_direction = np.cross(y_direction, z_direction)
+        # Normalize the direction vectors
+        x_direction = x_direction / np.linalg.norm(x_direction)
+        y_direction = y_direction / np.linalg.norm(y_direction)
+        z_direction = z_direction / np.linalg.norm(z_direction)
+
+        # Create the transformation matrix
+        transformation_matrix = np.array(
+            [x_direction, y_direction, z_direction]).T
+
+        # Transform the acceleration vector into the custom coordinate system
+        acceleration_in_custom_system = np.dot(
+            transformation_matrix, acceleration_vector)
+        acceleration = np.insert(
+            acceleration_in_custom_system, 0, [trj_id, frame])
+
+        # Append the result to the list
+        accelerations_custom_system.append(acceleration)
+
+    return np.array(accelerations_custom_system)

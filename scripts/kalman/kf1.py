@@ -138,7 +138,9 @@ def kalman3Dacc(lines, target):
         # Kalman Filter update steps
         D = np.linalg.pinv(H.dot(S.dot(H.T)) + R)
         K = S.dot(H.T).dot(D)
-
+        # Print S in 9x9 matrix form with equal space each cell
+        print("S: ", np.matrix(S))
+        print("K: ", np.matrix(K))
         # Observation
         Z = np.array([xyz[i, :]]).T
 
@@ -163,6 +165,7 @@ def kalman3Dacc(lines, target):
 
         # Update state and covariance for next iteration
         XT = F.dot(X2)
+        print("XT: ", np.matrix(XT))
         S = F.dot(S2.dot(F.T)) + G.dot(Q.dot(G.T))
 
         t = t + dt
