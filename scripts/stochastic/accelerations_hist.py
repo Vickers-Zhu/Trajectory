@@ -2,6 +2,7 @@ from scripts.trj_data_utils import get_traj, calculate_acceleration, calculate_a
 from matplotlib import colormaps
 from matplotlib import pyplot as plt
 import numpy as np
+from scipy.stats import norm
 
 
 def plot_acceleration(data, ID):
@@ -38,12 +39,15 @@ def plot_all_accelerations_hist(data):
     # Create histograms for all three axes on a single graph
     plt.figure(figsize=(8, 15))
     print("Front dir acce: ", [item[3] for item in flat_acceleration_data])
-    plt.hist([item[2] for item in flat_acceleration_data], bins=30, density=True,
+    plt.hist([item[2] for item in flat_acceleration_data], bins=20, density=True,
              color='blue', alpha=0.5, label='X-axis')
-    plt.hist([item[3] for item in flat_acceleration_data], bins=30, density=True,
+    plt.hist([item[3] for item in flat_acceleration_data], bins=20, density=True,
              color='green', alpha=0.5, label='Y-axis')
-    plt.hist([item[4] for item in flat_acceleration_data], bins=30, density=True,
+    plt.hist([item[4] for item in flat_acceleration_data], bins=20, density=True,
              color='red', alpha=0.5, label='Z-axis')
+    plot_gaussian([item[2] for item in flat_acceleration_data], 'blue')
+    plot_gaussian([item[3] for item in flat_acceleration_data], 'green')
+    plot_gaussian([item[4] for item in flat_acceleration_data], 'red')
 
     plt.title('Histograms of Accelerations in X, Y, and Z Axes')
     plt.xlabel('Acceleration')
@@ -115,3 +119,13 @@ def hist_debug():
 
     # Show the histogram
     plt.show()
+
+
+def plot_gaussian(data, color):
+    # Example data, replace with your actual dataset
+    mean = np.mean(data, axis=0)
+    std_dev = np.std(data, axis=0)
+    # Plotting the mean
+    x = np.linspace(mean - 3*std_dev, mean + 3*std_dev, 100)
+    plt.plot(x, norm.pdf(x, mean, std_dev),
+             label='Gaussian Distribution', color=color)
